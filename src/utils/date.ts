@@ -27,6 +27,7 @@ export function formatLocalDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+  console.log(111)
 }
 
 export function addDays(date: Date, days: number): Date {
