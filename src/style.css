@@ -1,0 +1,23 @@
+:root {
+  --text: #333;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  
+  font: 14px/1.5 var(--sans);
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+#app {
+  height: 100%;
+  width: 100%;
+}
