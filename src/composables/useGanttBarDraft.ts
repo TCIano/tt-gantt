@@ -9,8 +9,11 @@ interface UseGanttBarDraftOptions {
   baseWidthPx: ComputedRef<number>;
   minWidthPx: ComputedRef<number>;
   pxPerDay: ComputedRef<number>;
+  snapStepDays: ComputedRef<number>;
   taskStartDate: ComputedRef<string>;
   taskEndDate: ComputedRef<string>;
+  getVisibleDayIndex: (date: Date) => number;
+  getDateByVisibleIndex: (index: number) => Date;
 }
 
 export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
@@ -32,16 +35,21 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
   const isResizing = computed(() => mode.value === 'resize-left' || mode.value === 'resize-right');
   const isActive = computed(() => mode.value !== 'idle');
 
+  const quantizeBySnapStep = (rawDays: number) => {
+    const step = Math.max(1, options.snapStepDays.value);
+    return Math.round(rawDays / step) * step;
+  };
+
   const dragDeltaDays = computed(() =>
-    Math.round((draftLeftPx.value - originLeftPx.value) / options.pxPerDay.value)
+    quantizeBySnapStep((draftLeftPx.value - originLeftPx.value) / options.pxPerDay.value)
   );
 
   const resizeLeftDays = computed(() =>
-    Math.round((draftLeftPx.value - originLeftPx.value) / options.pxPerDay.value)
+    quantizeBySnapStep((draftLeftPx.value - originLeftPx.value) / options.pxPerDay.value)
   );
 
   const resizeRightDays = computed(() =>
-    Math.round((draftWidthPx.value - originWidthPx.value) / options.pxPerDay.value)
+    quantizeBySnapStep((draftWidthPx.value - originWidthPx.value) / options.pxPerDay.value)
   );
 
   const draftStartDate = computed(() => {
@@ -49,12 +57,15 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     const originEnd = parseLocalDate(originEndDate.value || options.taskEndDate.value);
 
     if (mode.value === 'drag') {
-      return formatLocalDate(addDays(origin, dragDeltaDays.value));
+      const nextIndex = options.getVisibleDayIndex(origin) + dragDeltaDays.value;
+      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
     }
 
     if (mode.value === 'resize-left') {
-      const maxDrag = diffDays(origin, originEnd);
-      return formatLocalDate(addDays(origin, Math.min(resizeLeftDays.value, maxDrag)));
+      const originIndex = options.getVisibleDayIndex(origin);
+      const endIndex = options.getVisibleDayIndex(originEnd);
+      const nextIndex = Math.min(originIndex + resizeLeftDays.value, endIndex);
+      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
     }
 
     return formatLocalDate(origin);
@@ -65,12 +76,15 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     const origin = parseLocalDate(originEndDate.value || options.taskEndDate.value);
 
     if (mode.value === 'drag') {
-      return formatLocalDate(addDays(origin, dragDeltaDays.value));
+      const nextIndex = options.getVisibleDayIndex(origin) + dragDeltaDays.value;
+      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
     }
 
     if (mode.value === 'resize-right') {
-      const minDrag = -diffDays(originStart, origin);
-      return formatLocalDate(addDays(origin, Math.max(resizeRightDays.value, minDrag)));
+      const startIndex = options.getVisibleDayIndex(originStart);
+      const originIndex = options.getVisibleDayIndex(origin);
+      const nextIndex = Math.max(originIndex + resizeRightDays.value, startIndex);
+      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
     }
 
     return formatLocalDate(origin);

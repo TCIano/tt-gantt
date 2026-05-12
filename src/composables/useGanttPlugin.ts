@@ -8,6 +8,10 @@ export interface GanttEventPayloads {
   onTaskToggle: { task: GanttTask | FlatGanttTask; expanded: boolean };
   onTaskPreviewChange: GanttTaskPreview;
   onTaskPreviewEnd: { taskId: string | number };
+  onSelectionChange: { selectedTaskIds: (string | number)[] };
+  onValidationError: { task: GanttTask | FlatGanttTask; reason: string };
+  onDependencyClick: { sourceId: string | number; targetId: string | number; id: string };
+  onDependencyCreate: { sourceId: string | number; targetId: string | number };
 }
 
 export type GanttEventName = keyof GanttEventPayloads;

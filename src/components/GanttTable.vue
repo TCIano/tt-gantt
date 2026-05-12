@@ -1,32 +1,37 @@
 <template>
   <div class="gantt-table">
     <div class="gantt-table-header" :style="{ height: headerHeight + 'px' }">
-      <div 
-        v-for="col in columns" 
+      <div
+        v-for="col in columns"
         :key="col.field"
         class="header-cell"
-        :style="{ width: col.width ? col.width + 'px' : '150px', minWidth: col.minWidth ? col.minWidth + 'px' : 'auto', textAlign: col.align || 'left' }"
+        :style="{
+          width: col.width ? col.width + 'px' : '150px',
+          minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
+          textAlign: col.align || 'left'
+        }"
       >
         {{ col.label }}
       </div>
     </div>
     <div class="gantt-table-body" :style="{ height: totalHeight + 'px', position: 'relative' }">
-      <div
-        class="gantt-table-content"
-        :style="{ transform: `translateY(${offsetY}px)` }"
-      >
-        <div 
-          v-for="task in visibleTasks" 
+      <div class="gantt-table-content" :style="{ transform: `translateY(${offsetY}px)` }">
+        <div
+          v-for="task in visibleTasks"
           :key="task.id"
           class="gantt-table-row"
-          :class="{ 'is-expanded': task.expanded !== false }"
+          :class="{
+            'is-expanded': task.expanded !== false,
+            'is-selected': selectedTaskSet.has(task.id)
+          }"
           :style="{ height: rowHeight + 'px' }"
+          @click="onRowClick($event, task.id)"
         >
-          <div 
-            v-for="col in columns" 
+          <div
+            v-for="col in columns"
             :key="col.field"
-            class="task-cell" 
-            :style="{ 
+            class="task-cell"
+            :style="{
               width: col.width ? col.width + 'px' : '150px',
               minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
               paddingLeft: col.tree ? task._level * 24 + 16 + 'px' : '16px',
@@ -34,20 +39,32 @@
             }"
           >
             <template v-if="col.tree">
-              <button 
-                v-if="task._hasChildren" 
+              <button
+                v-if="task._hasChildren"
                 class="toggle-btn"
                 :class="{ 'is-open': task.expanded !== false }"
                 @click="toggleTask(task.id)"
               >
-                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
               </button>
               <span v-else class="toggle-spacer"></span>
             </template>
             <slot :name="`cell-${col.field}`" :task="task" :column="col">
-              <span class="task-text" :title="String(col.format ? col.format(task[col.field], task) : task[col.field])">
+              <span
+                class="task-text"
+                :title="String(col.format ? col.format(task[col.field], task) : task[col.field])"
+              >
                 {{ col.format ? col.format(task[col.field], task) : task[col.field] }}
               </span>
             </slot>
@@ -60,15 +77,35 @@
 
 <script setup lang="ts">
 import { useGanttStore } from '../composables/useGanttStore';
+import { computed } from 'vue';
 
-const { visibleTasks, rowHeight, toggleTask, totalHeight, offsetY, columns } = useGanttStore();
+const {
+  visibleTasks,
+  rowHeight,
+  toggleTask,
+  totalHeight,
+  offsetY,
+  columns,
+  selectedTaskIds,
+  selectTask
+} = useGanttStore();
 const headerHeight = 48; // 更新表头高度以改善设计
+
+const selectedTaskSet = computed(() => new Set(selectedTaskIds.value));
+
+const onRowClick = (e: MouseEvent, taskId: string | number) => {
+  selectTask(taskId, {
+    append: e.ctrlKey || e.metaKey,
+    toggle: e.ctrlKey || e.metaKey
+  });
+};
 </script>
 
 <style scoped>
 .gantt-table {
   position: relative;
   min-width: max-content;
+  background: white;
 }
 .gantt-table-header {
   position: sticky;
@@ -78,12 +115,12 @@ const headerHeight = 48; // 更新表头高度以改善设计
   z-index: 10;
   display: flex;
   align-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b5563;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
 }
 .header-cell {
   padding: 0 16px;
@@ -91,7 +128,10 @@ const headerHeight = 48; // 更新表头高度以改善设计
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-right: 1px solid #e5e7eb;
+  border-right: 1px solid #f3f4f6;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 .header-cell:last-child {
   border-right: none;
@@ -111,10 +151,25 @@ const headerHeight = 48; // 更新表头高度以改善设计
   align-items: center;
   border-bottom: 1px solid #f3f4f6;
   box-sizing: border-box;
-  transition: background-color 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 .gantt-table-row:hover {
-  background-color: #f8fafc;
+  background-color: #f9fafb;
+  transform: translateX(4px);
+}
+.gantt-table-row.is-selected {
+  background-color: #f5f7ff;
+  position: relative;
+}
+.gantt-table-row.is-selected::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #4f46e5;
 }
 .task-cell {
   display: flex;
@@ -122,47 +177,57 @@ const headerHeight = 48; // 更新表头高度以改善设计
   padding-right: 16px;
   box-sizing: border-box;
   overflow: hidden;
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid #f9fafb;
   height: 100%;
 }
 .task-cell:last-child {
   border-right: none;
 }
 .toggle-btn {
-  background: none;
+  background: #f3f4f6;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  margin-right: 6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-right: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: #6b7280;
   border-radius: 4px;
   transition: all 0.2s ease;
 }
 .toggle-btn:hover {
   background-color: #e5e7eb;
-  color: #4b5563;
+  color: #111827;
 }
 .toggle-btn svg {
-  transition: transform 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toggle-btn.is-open {
+  background-color: #eef2ff;
+  color: #4f46e5;
 }
 .toggle-btn.is-open svg {
   transform: rotate(90deg);
 }
 .toggle-spacer {
-  width: 22px;
-  margin-right: 6px;
+  width: 18px;
+  margin-right: 8px;
   display: inline-block;
   flex-shrink: 0;
 }
 .task-text {
-  font-size: 14px;
-  color: #111827;
+  font-size: 13px;
+  color: #374151;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+}
+.gantt-table-row.is-selected .task-text {
+  color: #4f46e5;
+  font-weight: 600;
 }
 </style>

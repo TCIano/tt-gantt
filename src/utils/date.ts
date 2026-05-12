@@ -27,7 +27,6 @@ export function formatLocalDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
-  console.log(111)
 }
 
 export function addDays(date: Date, days: number): Date {
@@ -44,4 +43,33 @@ export function diffDays(date1: Date | string, date2: Date | string) {
   const utc2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
   const diff = utc2 - utc1;
   return Math.round(diff / 86400000);
+}
+
+export function startOfWeek(date: Date, weekStartsOn: number = 1): Date {
+  const base = parseLocalDate(date);
+  const day = base.getDay();
+  const delta = (day - weekStartsOn + 7) % 7;
+  return addDays(base, -delta);
+}
+
+export function startOfMonth(date: Date): Date {
+  const d = parseLocalDate(date);
+  return new Date(d.getFullYear(), d.getMonth(), 1);
+}
+
+export function addMonths(date: Date, months: number): Date {
+  const d = parseLocalDate(date);
+  return new Date(d.getFullYear(), d.getMonth() + months, 1);
+}
+
+export function diffWeeks(start: Date, end: Date, weekStartsOn: number = 1): number {
+  const s = startOfWeek(start, weekStartsOn);
+  const e = startOfWeek(end, weekStartsOn);
+  return Math.floor(diffDays(s, e) / 7);
+}
+
+export function diffMonths(start: Date, end: Date): number {
+  const s = startOfMonth(start);
+  const e = startOfMonth(end);
+  return (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
 }

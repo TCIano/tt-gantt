@@ -1,15 +1,28 @@
 {
-  "name": "tmp",
-  "private": true,
-  "version": "0.0.0",
+  "name": "tt-gantt",
+  "version": "1.0.0",
   "type": "module",
+  "main": "./dist/tt-gantt.umd.js",
+  "module": "./dist/tt-gantt.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/tt-gantt.es.js",
+      "require": "./dist/tt-gantt.umd.js"
+    },
+    "./style.css": "./dist/tt-gantt.css"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
-  "dependencies": {
-    "vue": "^3.5.32"
+  "peerDependencies": {
+    "vue": "^3.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.12.2",
@@ -24,6 +37,8 @@
     "prettier": "^3.8.3",
     "typescript": "~6.0.2",
     "vite": "^8.0.10",
+    "vite-plugin-dts": "^5.0.0",
+    "vue": "^3.5.32",
     "vue-tsc": "^3.2.7"
   }
 }
