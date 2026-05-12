@@ -114,12 +114,51 @@
 - [ ] **性能标准**：性能回归指标 `≤ 5%`（不得出现明显性能退化）。
 - [ ] **运行状态**：应用正常启动，无任何控制台报错（Console Errors）。
 - [ ] **变更日志**：CHANGELOG 已同步更新（若适用）。
+- [ ] **远端同步**：推送前已执行 `git pull --rebase` 并解决所有冲突。
 
 ---
 
-## 4. 交付物与自动化配置
+## 4. 代码推送规范 (Pushing)
 
-### 4.1 Git Hook 脚本 (`.git/hooks/commit-msg`)
+在执行 `git push` 前，必须遵循以下流程以确保远端代码库的整洁与稳定。
+
+### 4.1 推送前同步
+
+- **强制同步**：推送前必须先执行 `git pull --rebase origin <branch_name>`，确保本地分支基于最新的远端代码，避免产生不必要的 Merge Commit。
+- **冲突解决**：若存在冲突，必须在本地解决并完成所有回归测试（Regression Tests）后方可再次尝试推送。
+
+### 4.2 推送规则
+
+- **禁止强推**：严禁在公共分支（如 `main`, `master`, `develop`）执行 `git push -f` 或 `git push --force`。
+- **原子性推送**：建议将相关的多次 commit 合并（squash）为一个逻辑清晰、消息合规的 commit 后再推送。
+- **PR 机制**：除紧急修复外，所有代码必须通过 Pull Request 流程进行 Code Review，禁止直接推送至受保护分支。
+
+### 4.3 自动化推送校验 (Pre-push Hook)
+
+建议配置 `.git/hooks/pre-push` 脚本，在推送前自动运行全量测试，确保不会破坏远端构建：
+
+```bash
+#!/usr/bin/env bash
+
+# 推送前运行全量测试和 Lint
+echo -e "\033[34m[信息] 正在执行推送前自动化校验...\033[0m"
+
+npm run lint && npm run test:coverage
+
+if [ $? -ne 0 ]; then
+  echo -e "\033[31m[错误] 校验未通过，禁止推送！请修复错误后再试。\033[0m"
+  exit 1
+fi
+
+echo -e "\033[32m[成功] 校验通过，开始推送代码...\033[0m"
+exit 0
+```
+
+---
+
+## 5. 交付物与自动化配置
+
+### 5.1 Git Hook 脚本 (`.git/hooks/commit-msg`)
 
 请将以下代码保存到项目的 `.git/hooks/commit-msg` 文件中，并赋予执行权限（`chmod +x .git/hooks/commit-msg`），以实现对提交消息的正则校验。不合规将自动拒绝并给出修正提示：
 
@@ -159,7 +198,7 @@ fi
 exit 0
 ```
 
-### 4.2 CI/CD 门禁配置示例 (GitHub Actions)
+### 5.2 CI/CD 门禁配置示例 (GitHub Actions)
 
 在 `.github/workflows/pr-check.yml` 中配置门禁，提交PR时自动运行上述检查，任一失败即阻断合并：
 
@@ -205,7 +244,7 @@ jobs:
         run: npx commit-and-pr-checker --check-changelog
 ```
 
-### 4.3 《提交规范速查表》
+### 5.3 《提交规范速查表》
 
 复制以下速查表以便日常开发参考：
 

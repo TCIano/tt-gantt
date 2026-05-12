@@ -113,15 +113,30 @@
     <div class="gantt-layout-container">
       <div class="gantt-layout" :class="{ 'has-compare': compareView }">
         <div class="gantt-left" ref="leftRef" @scroll="handleLeftScroll">
-          <GanttTable>
+          <GanttTable :row-class="props.rowClass" :row-style="props.rowStyle">
             <template v-for="(_, name) in $slots" #[name]="slotProps" :key="name">
-              <slot v-if="name.startsWith('cell-')" :name="name" v-bind="slotProps"></slot>
+              <slot
+                v-if="
+                  name.startsWith('cell-') ||
+                  ['header', 'expand-icon', 'empty', 'row'].includes(name)
+                "
+                :name="name"
+                v-bind="slotProps"
+              ></slot>
             </template>
           </GanttTable>
         </div>
 
         <div class="gantt-right" ref="rightRef" @scroll="handleRightScroll">
-          <GanttTimeline>
+          <GanttTimeline
+            :bar-class="props.barClass"
+            :bar-style="props.barStyle"
+            :row-class="props.rowClass"
+            :row-style="props.rowStyle"
+          >
+            <template #timeline-header="slotProps">
+              <slot name="timeline-header" v-bind="slotProps"></slot>
+            </template>
             <template #bar="slotProps">
               <slot name="bar" v-bind="slotProps"></slot>
             </template>
@@ -132,7 +147,15 @@
                 <span class="dot"></span>
                 对比视图
               </div>
-              <GanttTimeline>
+              <GanttTimeline
+                :bar-class="props.barClass"
+                :bar-style="props.barStyle"
+                :row-class="props.rowClass"
+                :row-style="props.rowStyle"
+              >
+                <template #timeline-header="slotProps">
+                  <slot name="timeline-header" v-bind="slotProps"></slot>
+                </template>
                 <template #bar="slotProps">
                   <slot name="bar" v-bind="slotProps"></slot>
                 </template>
@@ -163,7 +186,11 @@ import type {
   FlatGanttTask,
   GanttColumn,
   GanttSnapMode,
-  GanttStatusStyle
+  GanttStatusStyle,
+  GanttRowClassFn,
+  GanttRowStyleFn,
+  GanttBarClassFn,
+  GanttBarStyleFn
 } from '../types/gantt';
 
 const props = withDefaults(
@@ -181,6 +208,10 @@ const props = withDefaults(
     showBaseline?: boolean;
     showTodayLine?: boolean;
     hideHolidays?: boolean;
+    rowClass?: GanttRowClassFn;
+    rowStyle?: GanttRowStyleFn;
+    barClass?: GanttBarClassFn;
+    barStyle?: GanttBarStyleFn;
   }>(),
   {
     readOnly: false,
@@ -462,6 +493,20 @@ onUnmounted(() => {
 
 <style scoped>
 .gantt-layout-wrapper {
+  /* 暴露 CSS 变量供外部覆盖 */
+  --gantt-bg-color: #f9fafb;
+  --gantt-border-color: #f3f4f6;
+  --gantt-header-bg: #f9fafb;
+  --gantt-header-border: #e5e7eb;
+  --gantt-row-hover-bg: #f9fafb;
+  --gantt-row-selected-bg: #f5f7ff;
+  --gantt-text-color: #374151;
+  --gantt-header-text-color: #4b5563;
+  --gantt-primary-color: #4f46e5;
+  --gantt-grid-line-color: #f3f4f6;
+  --gantt-weekend-bg: #f9fafb;
+  --gantt-today-line-color: #ef4444;
+
   height: 100%;
   box-sizing: border-box;
   font-family:
@@ -474,7 +519,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   outline: none;
-  background-color: #f9fafb;
+  background-color: var(--gantt-bg-color);
   padding: 16px;
 }
 

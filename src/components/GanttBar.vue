@@ -2,18 +2,24 @@
   <div
     ref="containerRef"
     class="gantt-bar-container"
-    :class="{
-      'is-dragging': isDragging,
-      'is-resizing': isResizing,
-      'is-expanding': store.isTimelineExpanding.value,
-      'is-readonly': isCurrentTaskReadOnly,
-      'is-milestone-container': isMilestone,
-      'is-selected': store.selectedTaskIds.value.includes(task.id)
-    }"
-    :style="{
-      left: `${renderLeftPx}px`,
-      width: `${renderWidthPx}px`
-    }"
+    :class="[
+      {
+        'is-dragging': isDragging,
+        'is-resizing': isResizing,
+        'is-expanding': store.isTimelineExpanding.value,
+        'is-readonly': isCurrentTaskReadOnly,
+        'is-milestone-container': isMilestone,
+        'is-selected': store.selectedTaskIds.value.includes(task.id)
+      },
+      props.customClass ? props.customClass(task) : ''
+    ]"
+    :style="[
+      {
+        left: `${renderLeftPx}px`,
+        width: `${renderWidthPx}px`
+      },
+      props.customStyle ? props.customStyle(task) : {}
+    ]"
     @pointerdown.stop.prevent="onPointerDown"
     @lostpointercapture="onPointerCaptureLost"
     @mouseenter="onMouseEnter"
@@ -52,7 +58,12 @@
 
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from 'vue';
-import type { FlatGanttTask, GanttPreviewMode } from '../types/gantt';
+import type {
+  FlatGanttTask,
+  GanttPreviewMode,
+  GanttBarClassFn,
+  GanttBarStyleFn
+} from '../types/gantt';
 import { useGanttStore } from '../composables/useGanttStore';
 import { useGanttEventBus } from '../composables/useGanttPlugin';
 import { useGanttBarMetrics } from '../composables/useGanttBarMetrics';
@@ -62,6 +73,8 @@ import { getCanvasX } from '../composables/useGanttCanvasPointer';
 
 const props = defineProps<{
   task: FlatGanttTask;
+  customClass?: GanttBarClassFn;
+  customStyle?: GanttBarStyleFn;
 }>();
 
 const store = useGanttStore();

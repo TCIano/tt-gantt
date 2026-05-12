@@ -1,74 +1,98 @@
 <template>
   <div class="gantt-table">
     <div class="gantt-table-header" :style="{ height: headerHeight + 'px' }">
-      <div
-        v-for="col in columns"
-        :key="col.field"
-        class="header-cell"
-        :style="{
-          width: col.width ? col.width + 'px' : '150px',
-          minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
-          textAlign: col.align || 'left'
-        }"
-      >
-        {{ col.label }}
-      </div>
+      <slot name="header" :columns="columns">
+        <div
+          v-for="col in columns"
+          :key="col.field"
+          class="header-cell"
+          :style="{
+            width: col.width ? col.width + 'px' : '150px',
+            minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
+            textAlign: col.align || 'left'
+          }"
+        >
+          {{ col.label }}
+        </div>
+      </slot>
     </div>
     <div class="gantt-table-body" :style="{ height: totalHeight + 'px', position: 'relative' }">
-      <div class="gantt-table-content" :style="{ transform: `translateY(${offsetY}px)` }">
+      <div v-if="visibleTasks.length === 0" class="gantt-table-empty">
+        <slot name="empty">
+          <div class="empty-text">暂无数据</div>
+        </slot>
+      </div>
+      <div v-else class="gantt-table-content" :style="{ transform: `translateY(${offsetY}px)` }">
         <div
           v-for="task in visibleTasks"
           :key="task.id"
           class="gantt-table-row"
-          :class="{
-            'is-expanded': task.expanded !== false,
-            'is-selected': selectedTaskSet.has(task.id)
-          }"
-          :style="{ height: rowHeight + 'px' }"
+          :class="[
+            {
+              'is-expanded': task.expanded !== false,
+              'is-selected': selectedTaskSet.has(task.id)
+            },
+            props.rowClass ? props.rowClass(task) : ''
+          ]"
+          :style="[{ height: rowHeight + 'px' }, props.rowStyle ? props.rowStyle(task) : {}]"
           @click="onRowClick($event, task.id)"
         >
-          <div
-            v-for="col in columns"
-            :key="col.field"
-            class="task-cell"
-            :style="{
-              width: col.width ? col.width + 'px' : '150px',
-              minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
-              paddingLeft: col.tree ? task._level * 24 + 16 + 'px' : '16px',
-              textAlign: col.align || 'left'
-            }"
+          <slot
+            name="row"
+            :task="task"
+            :columns="columns"
+            :is-selected="selectedTaskSet.has(task.id)"
           >
-            <template v-if="col.tree">
-              <button
-                v-if="task._hasChildren"
-                class="toggle-btn"
-                :class="{ 'is-open': task.expanded !== false }"
-                @click="toggleTask(task.id)"
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  fill="none"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
+            <div
+              v-for="col in columns"
+              :key="col.field"
+              class="task-cell"
+              :style="{
+                width: col.width ? col.width + 'px' : '150px',
+                minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
+                paddingLeft: col.tree ? task._level * 24 + 16 + 'px' : '16px',
+                textAlign: col.align || 'left'
+              }"
+            >
+              <template v-if="col.tree">
+                <slot
+                  name="expand-icon"
+                  :task="task"
+                  :expanded="task.expanded !== false"
+                  :on-toggle="() => toggleTask(task.id)"
                 >
-                  <polyline points="9 18 15 12 9 6"></polyline>
-                </svg>
-              </button>
-              <span v-else class="toggle-spacer"></span>
-            </template>
-            <slot :name="`cell-${col.field}`" :task="task" :column="col">
-              <span
-                class="task-text"
-                :title="String(col.format ? col.format(task[col.field], task) : task[col.field])"
-              >
-                {{ col.format ? col.format(task[col.field], task) : task[col.field] }}
-              </span>
-            </slot>
-          </div>
+                  <button
+                    v-if="task._hasChildren"
+                    class="toggle-btn"
+                    :class="{ 'is-open': task.expanded !== false }"
+                    @click.stop="toggleTask(task.id)"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="14"
+                      height="14"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      fill="none"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </button>
+                  <span v-else class="toggle-spacer"></span>
+                </slot>
+              </template>
+              <slot :name="`cell-${col.field}`" :task="task" :column="col">
+                <span
+                  class="task-text"
+                  :title="String(col.format ? col.format(task[col.field], task) : task[col.field])"
+                >
+                  {{ col.format ? col.format(task[col.field], task) : task[col.field] }}
+                </span>
+              </slot>
+            </div>
+          </slot>
         </div>
       </div>
     </div>
@@ -78,6 +102,12 @@
 <script setup lang="ts">
 import { useGanttStore } from '../composables/useGanttStore';
 import { computed } from 'vue';
+import type { GanttRowClassFn, GanttRowStyleFn } from '../types/gantt';
+
+const props = defineProps<{
+  rowClass?: GanttRowClassFn;
+  rowStyle?: GanttRowStyleFn;
+}>();
 
 const {
   visibleTasks,
@@ -105,19 +135,19 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
 .gantt-table {
   position: relative;
   min-width: max-content;
-  background: white;
+  background: var(--gantt-bg-color, white);
 }
 .gantt-table-header {
   position: sticky;
   top: 0;
-  background-color: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--gantt-header-bg, #f9fafb);
+  border-bottom: 1px solid var(--gantt-header-border, #e5e7eb);
   z-index: 10;
   display: flex;
   align-items: center;
   font-size: 11px;
   font-weight: 700;
-  color: #4b5563;
+  color: var(--gantt-header-text-color, #4b5563);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
@@ -128,7 +158,7 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--gantt-border-color, #f3f4f6);
   height: 100%;
   display: flex;
   align-items: center;
@@ -149,17 +179,17 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
 .gantt-table-row {
   display: flex;
   align-items: center;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--gantt-border-color, #f3f4f6);
   box-sizing: border-box;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
 }
 .gantt-table-row:hover {
-  background-color: #f9fafb;
+  background-color: var(--gantt-row-hover-bg, #f9fafb);
   transform: translateX(4px);
 }
 .gantt-table-row.is-selected {
-  background-color: #f5f7ff;
+  background-color: var(--gantt-row-selected-bg, #f5f7ff);
   position: relative;
 }
 .gantt-table-row.is-selected::before {
@@ -169,7 +199,7 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
   top: 0;
   bottom: 0;
   width: 3px;
-  background: #4f46e5;
+  background: var(--gantt-primary-color, #4f46e5);
 }
 .task-cell {
   display: flex;
@@ -177,14 +207,14 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
   padding-right: 16px;
   box-sizing: border-box;
   overflow: hidden;
-  border-right: 1px solid #f9fafb;
+  border-right: 1px solid var(--gantt-border-color, #f9fafb);
   height: 100%;
 }
 .task-cell:last-child {
   border-right: none;
 }
 .toggle-btn {
-  background: #f3f4f6;
+  background: var(--gantt-border-color, #f3f4f6);
   border: none;
   cursor: pointer;
   width: 18px;
@@ -194,20 +224,20 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6b7280;
+  color: var(--gantt-header-text-color, #6b7280);
   border-radius: 4px;
   transition: all 0.2s ease;
 }
 .toggle-btn:hover {
-  background-color: #e5e7eb;
-  color: #111827;
+  background-color: var(--gantt-header-border, #e5e7eb);
+  color: var(--gantt-text-color, #111827);
 }
 .toggle-btn svg {
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .toggle-btn.is-open {
-  background-color: #eef2ff;
-  color: #4f46e5;
+  background-color: var(--gantt-row-selected-bg, #eef2ff);
+  color: var(--gantt-primary-color, #4f46e5);
 }
 .toggle-btn.is-open svg {
   transform: rotate(90deg);
@@ -220,14 +250,25 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
 }
 .task-text {
   font-size: 13px;
-  color: #374151;
+  color: var(--gantt-text-color, #374151);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
 }
 .gantt-table-row.is-selected .task-text {
-  color: #4f46e5;
+  color: var(--gantt-primary-color, #4f46e5);
   font-weight: 600;
+}
+.gantt-table-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  width: 100%;
+}
+.empty-text {
+  color: #9ca3af;
+  font-size: 13px;
 }
 </style>

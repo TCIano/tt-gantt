@@ -1,6 +1,6 @@
 import { computed, ref, type ComputedRef } from 'vue';
 import type { GanttPreviewMode } from '../types/gantt';
-import { addDays, formatLocalDate, parseLocalDate, diffDays } from '../utils/date';
+import { formatLocalDate, parseLocalDate } from '../utils/date';
 
 type DraftMode = 'idle' | GanttPreviewMode;
 

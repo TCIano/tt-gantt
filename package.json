@@ -16,6 +16,9 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "registry": "http://your-company-registry.com"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",

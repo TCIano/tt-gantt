@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'vue';
+
 export interface GanttColumn {
   field: string;
   label: string;
@@ -67,3 +69,8 @@ export interface GanttDependencyLine {
   arrow: string;
   highlighted?: boolean;
 }
+
+export type GanttRowClassFn = (task: FlatGanttTask) => string | string[] | Record<string, boolean>;
+export type GanttRowStyleFn = (task: FlatGanttTask) => CSSProperties;
+export type GanttBarClassFn = (task: FlatGanttTask) => string | string[] | Record<string, boolean>;
+export type GanttBarStyleFn = (task: FlatGanttTask) => CSSProperties;

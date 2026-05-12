@@ -4,31 +4,38 @@
       class="gantt-timeline-header"
       :style="{ height: headerHeight + 'px', width: totalWidth + 'px' }"
     >
-      <div class="gantt-timeline-dates" :style="{ transform: `translateX(${offsetX}px)` }">
-        <div
-          v-for="date in visibleDates"
-          :key="date.getTime()"
-          class="gantt-timeline-date"
-          :class="{
-            'is-weekend': isNonWorkingDay(date),
-            'is-today': isToday(date) && scale === 'day'
-          }"
-          :style="{ width: columnWidth + 'px' }"
-        >
-          <template v-if="scale === 'day'">
-            <span class="date-day">{{ date.getDate() }}</span>
-            <span class="date-month">{{ monthNames[date.getMonth()] }}</span>
-          </template>
-          <template v-else-if="scale === 'week'">
-            <span class="date-day">W{{ getWeekNumber(date) }}</span>
-            <span class="date-month">{{ monthNames[date.getMonth()] }}</span>
-          </template>
-          <template v-else-if="scale === 'month'">
-            <span class="date-day">{{ monthNames[date.getMonth()] }}</span>
-            <span class="date-month">{{ date.getFullYear() }}</span>
-          </template>
+      <slot
+        name="timeline-header"
+        :visible-dates="visibleDates"
+        :column-width="columnWidth"
+        :scale="scale"
+      >
+        <div class="gantt-timeline-dates" :style="{ transform: `translateX(${offsetX}px)` }">
+          <div
+            v-for="date in visibleDates"
+            :key="date.getTime()"
+            class="gantt-timeline-date"
+            :class="{
+              'is-weekend': isNonWorkingDay(date),
+              'is-today': isToday(date) && scale === 'day'
+            }"
+            :style="{ width: columnWidth + 'px' }"
+          >
+            <template v-if="scale === 'day'">
+              <span class="date-day">{{ date.getDate() }}</span>
+              <span class="date-month">{{ monthNames[date.getMonth()] }}</span>
+            </template>
+            <template v-else-if="scale === 'week'">
+              <span class="date-day">W{{ getWeekNumber(date) }}</span>
+              <span class="date-month">{{ monthNames[date.getMonth()] }}</span>
+            </template>
+            <template v-else-if="scale === 'month'">
+              <span class="date-day">{{ monthNames[date.getMonth()] }}</span>
+              <span class="date-month">{{ date.getFullYear() }}</span>
+            </template>
+          </div>
         </div>
-      </div>
+      </slot>
     </div>
     <div class="gantt-timeline-body" :style="{ height: totalHeight + 'px', position: 'relative' }">
       <!-- SVG 依赖连线图层 -->
@@ -64,7 +71,8 @@
           v-for="task in visibleTasks"
           :key="task.id"
           class="gantt-timeline-row"
-          :style="{ height: rowHeight + 'px' }"
+          :class="props.rowClass ? props.rowClass(task) : ''"
+          :style="[{ height: rowHeight + 'px' }, props.rowStyle ? props.rowStyle(task) : {}]"
         >
           <!-- 列的网格线 -->
           <div class="gantt-timeline-grid" :style="{ transform: `translateX(${offsetX}px)` }">
@@ -85,7 +93,7 @@
             :style="getBaselineStyle(task)"
           ></div>
           <!-- 任务条占位符 -->
-          <GanttBar :task="task">
+          <GanttBar :task="task" :custom-class="props.barClass" :custom-style="props.barStyle">
             <template #bar="slotProps">
               <slot name="bar" v-bind="slotProps"></slot>
             </template>
@@ -101,8 +109,22 @@ import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { useGanttStore } from '../composables/useGanttStore';
 import { useGanttEventBus } from '../composables/useGanttPlugin';
 import GanttBar from './GanttBar.vue';
-import { parseLocalDate, diffDays, diffWeeks, diffMonths } from '../utils/date';
-import type { GanttTaskPreview, FlatGanttTask } from '../types/gantt';
+import { parseLocalDate } from '../utils/date';
+import type {
+  GanttTaskPreview,
+  FlatGanttTask,
+  GanttBarClassFn,
+  GanttBarStyleFn,
+  GanttRowClassFn,
+  GanttRowStyleFn
+} from '../types/gantt';
+
+const props = defineProps<{
+  barClass?: GanttBarClassFn;
+  barStyle?: GanttBarStyleFn;
+  rowClass?: GanttRowClassFn;
+  rowStyle?: GanttRowStyleFn;
+}>();
 
 const store = useGanttStore();
 const eventBus = useGanttEventBus();
@@ -298,11 +320,11 @@ const dependencyLinks = computed(() => {
 <style scoped>
 .gantt-timeline {
   min-width: 100%;
-  background: white;
+  background: var(--gantt-bg-color, white);
 }
 .gantt-timeline-header {
-  border-bottom: 1px solid #e5e7eb;
-  background-color: #f9fafb;
+  border-bottom: 1px solid var(--gantt-header-border, #e5e7eb);
+  background-color: var(--gantt-header-bg, #f9fafb);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -318,39 +340,43 @@ const dependencyLinks = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--gantt-border-color, #f3f4f6);
   box-sizing: border-box;
 }
 .gantt-timeline-date.is-weekend {
-  background-color: #f9fafb;
+  background-color: var(--gantt-weekend-bg, #f9fafb);
 }
 .gantt-timeline-date.is-today {
-  color: #4f46e5;
-  background: #f5f7ff;
+  color: var(--gantt-primary-color, #4f46e5);
+  background: var(--gantt-row-selected-bg, #f5f7ff);
 }
 .date-day {
   font-size: 13px;
   font-weight: 700;
-  color: #374151;
+  color: var(--gantt-text-color, #374151);
 }
 .gantt-timeline-date.is-today .date-day {
-  color: #4f46e5;
+  color: var(--gantt-primary-color, #4f46e5);
 }
 .date-month {
   font-size: 9px;
   font-weight: 700;
-  color: #9ca3af;
+  color: var(--gantt-header-text-color, #9ca3af);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 1px;
 }
 .gantt-timeline-date.is-today .date-month {
-  color: #818cf8;
+  color: var(--gantt-primary-color, #818cf8);
 }
 
 .gantt-timeline-body {
   width: 100%;
-  background-image: linear-gradient(90deg, #f3f4f6 1px, transparent 1px);
+  background-image: linear-gradient(
+    90deg,
+    var(--gantt-grid-line-color, #f3f4f6) 1px,
+    transparent 1px
+  );
   background-size: v-bind('columnWidth + "px"') 100%;
 }
 .today-line {
@@ -358,7 +384,7 @@ const dependencyLinks = computed(() => {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, #ef4444, #f87171);
+  background: linear-gradient(to bottom, var(--gantt-today-line-color, #ef4444), #f87171);
   z-index: 8;
   pointer-events: none;
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
@@ -372,7 +398,7 @@ const dependencyLinks = computed(() => {
   font-size: 10px;
   font-weight: 800;
   color: white;
-  background: #ef4444;
+  background: var(--gantt-today-line-color, #ef4444);
   padding: 2px 6px;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -397,7 +423,7 @@ const dependencyLinks = computed(() => {
   pointer-events: auto;
 }
 .gantt-link-path:hover {
-  stroke: #4f46e5;
+  stroke: var(--gantt-primary-color, #4f46e5);
   stroke-width: 2.5;
 }
 .gantt-timeline-svg polygon {
@@ -407,13 +433,13 @@ const dependencyLinks = computed(() => {
   transition: fill 0.2s;
 }
 .gantt-timeline-svg polygon:hover {
-  fill: #4f46e5;
+  fill: var(--gantt-primary-color, #4f46e5);
 }
 .gantt-timeline-svg.is-expanding .gantt-link-path {
   transition: none !important;
 }
 .gantt-timeline-row {
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--gantt-border-color, #f3f4f6);
   position: relative;
   box-sizing: border-box;
   display: flex;
@@ -424,12 +450,12 @@ const dependencyLinks = computed(() => {
   height: 4px;
   top: 2px;
   border-radius: 2px;
-  background-color: #e5e7eb;
+  background-color: var(--gantt-header-border, #e5e7eb);
   pointer-events: none;
   z-index: 6;
 }
 .gantt-timeline-row:hover {
-  background-color: #f9fafb;
+  background-color: var(--gantt-row-hover-bg, #f9fafb);
 }
 .gantt-timeline-grid {
   display: flex;
@@ -442,13 +468,13 @@ const dependencyLinks = computed(() => {
 }
 .gantt-timeline-cell {
   height: 100%;
-  border-right: 1px solid #f3f4f6;
+  border-right: 1px solid var(--gantt-grid-line-color, #f3f4f6);
   box-sizing: border-box;
 }
 .gantt-timeline-cell.is-weekend {
-  background-color: rgba(249, 250, 251, 0.8);
+  background-color: var(--gantt-weekend-bg, rgba(249, 250, 251, 0.8));
 }
 .gantt-timeline-cell.is-today {
-  background-color: rgba(245, 247, 255, 0.5);
+  background-color: var(--gantt-row-selected-bg, rgba(245, 247, 255, 0.5));
 }
 </style>

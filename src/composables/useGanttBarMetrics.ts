@@ -1,6 +1,6 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
 import type { FlatGanttTask, GanttScale } from '../types/gantt';
-import { diffDays, parseLocalDate, diffMonths, diffWeeks, startOfMonth, startOfWeek } from '../utils/date';
+import { parseLocalDate } from '../utils/date';
 
 interface UseGanttBarMetricsOptions {
   task: Ref<FlatGanttTask>;
