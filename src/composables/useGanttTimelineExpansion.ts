@@ -41,7 +41,11 @@ export function useGanttTimelineExpansion(options: UseGanttTimelineExpansionOpti
     return 0;
   };
 
-  const maybeExpand = (container: HTMLElement, scrollSpeed: number, onViewportChange: (clientX: number, timelineShiftPx?: number) => void) => {
+  const maybeExpand = (
+    container: HTMLElement,
+    scrollSpeed: number,
+    onViewportChange: (clientX: number, timelineShiftPx?: number) => void
+  ) => {
     if (isExpanding || scrollSpeed === 0) return false;
 
     const remainingLeftPx = container.scrollLeft;
@@ -62,7 +66,7 @@ export function useGanttTimelineExpansion(options: UseGanttTimelineExpansionOpti
         if (currentToken !== lifecycleToken) return;
         const newScrollWidth = container.scrollWidth;
         const actualWidthDiff = newScrollWidth - previousScrollWidth;
-        
+
         const newScrollLeft = previousScrollLeft + actualWidthDiff;
         container.scrollLeft = newScrollLeft;
         if (options.setScrollLeft) {

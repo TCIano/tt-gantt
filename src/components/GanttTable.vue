@@ -17,6 +17,56 @@
       </slot>
     </div>
     <div class="gantt-table-body" :style="{ height: totalHeight + 'px', position: 'relative' }">
+      <!-- Resource mode rows -->
+      <template v-if="isResourceMode">
+        <div v-if="visibleResourceRows.length === 0" class="gantt-table-empty">
+          <slot name="empty">
+            <div class="empty-text">暂无资源数据</div>
+          </slot>
+        </div>
+        <div v-else class="gantt-table-content" :style="{ transform: `translateY(${offsetY}px)` }">
+          <div
+            v-for="res in visibleResourceRows"
+            :key="res.id"
+            class="gantt-table-row resource-row"
+            :class="{ 'is-expanded': res._expanded }"
+            :style="{ height: rowHeight + 'px' }"
+          >
+            <div
+              v-for="col in columns"
+              :key="col.field"
+              class="task-cell"
+              :style="{
+                width: col.width ? col.width + 'px' : '150px',
+                minWidth: col.minWidth ? col.minWidth + 'px' : 'auto',
+                paddingLeft: col.tree ? res._level * 24 + 16 + 'px' : '16px',
+                textAlign: col.align || 'left'
+              }"
+            >
+              <template v-if="col.tree">
+                <button
+                  v-if="res._hasChildren"
+                  class="toggle-btn"
+                  :class="{ 'is-open': res._expanded }"
+                  @click.stop="toggleResource(res.id)"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+                <span v-else class="toggle-spacer" />
+              </template>
+              <span class="task-text" :style="{ fontWeight: res._level === 0 ? 700 : 500 }">
+                {{ res.name }}
+                <span class="resource-type-badge">{{ resourceTypeLabel(res.type) }}</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Task mode rows (original) -->
+      <template v-else>
       <div v-if="visibleTasks.length === 0" class="gantt-table-empty">
         <slot name="empty">
           <div class="empty-text">暂无数据</div>
@@ -77,10 +127,10 @@
                       stroke-linecap="round"
                       stroke-linejoin="round"
                     >
-                      <polyline points="9 18 15 12 9 6"></polyline>
+                      <polyline points="9 18 15 12 9 6" />
                     </svg>
                   </button>
-                  <span v-else class="toggle-spacer"></span>
+                  <span v-else class="toggle-spacer" />
                 </slot>
               </template>
               <slot :name="`cell-${col.field}`" :task="task" :column="col">
@@ -95,40 +145,55 @@
           </slot>
         </div>
       </div>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useGanttStore } from '../composables/useGanttStore';
-import { computed } from 'vue';
-import type { GanttRowClassFn, GanttRowStyleFn } from '../types/gantt';
+import { useGanttStore } from '../composables/useGanttStore'
+import { computed } from 'vue'
+import type { GanttRowClassFn, GanttRowStyleFn } from '../types/gantt'
 
 const props = defineProps<{
-  rowClass?: GanttRowClassFn;
-  rowStyle?: GanttRowStyleFn;
-}>();
+  rowClass?: GanttRowClassFn
+  rowStyle?: GanttRowStyleFn
+}>()
 
 const {
   visibleTasks,
+  visibleResourceRows,
+  isResourceMode,
   rowHeight,
   toggleTask,
+  toggleResource,
   totalHeight,
   offsetY,
   columns,
   selectedTaskIds,
   selectTask
-} = useGanttStore();
-const headerHeight = 48; // 更新表头高度以改善设计
+} = useGanttStore()
+const headerHeight = 48
 
-const selectedTaskSet = computed(() => new Set(selectedTaskIds.value));
+const selectedTaskSet = computed(() => new Set(selectedTaskIds.value))
 
 const onRowClick = (e: MouseEvent, taskId: string | number) => {
   selectTask(taskId, {
     append: e.ctrlKey || e.metaKey,
     toggle: e.ctrlKey || e.metaKey
-  });
-};
+  })
+}
+
+const resourceTypeLabel = (type: string) => {
+  const labels: Record<string, string> = {
+    factory: '工厂',
+    workshop: '车间',
+    line: '产线',
+    workcenter: '工作中心',
+    machine: '设备'
+  }
+  return labels[type] || type
+}
 </script>
 
 <style scoped>
@@ -270,5 +335,19 @@ const onRowClick = (e: MouseEvent, taskId: string | number) => {
 .empty-text {
   color: #9ca3af;
   font-size: 13px;
+}
+
+.resource-row {
+  cursor: default;
+}
+
+.resource-type-badge {
+  font-size: 10px;
+  font-weight: 500;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: #6b7280;
+  background: #f3f4f6;
 }
 </style>

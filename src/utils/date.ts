@@ -6,18 +6,18 @@ export function parseLocalDate(dateStr: string | Date | number): Date {
     const d = new Date(dateStr);
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
-  
+
   const str = String(dateStr);
   if (str.includes('T')) {
     const d = new Date(str);
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
-  
+
   const parts = str.split(/[-/]/);
   if (parts.length >= 3) {
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2].substring(0, 2)));
   }
-  
+
   const d = new Date(str);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }

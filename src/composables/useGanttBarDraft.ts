@@ -1,6 +1,11 @@
 import { computed, ref, type ComputedRef } from 'vue';
 import type { GanttPreviewMode } from '../types/gantt';
-import { formatLocalDate, parseLocalDate } from '../utils/date';
+import { addDays, formatLocalDate, parseLocalDate } from '../utils/date';
+
+export interface DraftValidationItem {
+  severity: 'error' | 'warning';
+  message: string;
+}
 
 type DraftMode = 'idle' | GanttPreviewMode;
 
@@ -12,8 +17,7 @@ interface UseGanttBarDraftOptions {
   snapStepDays: ComputedRef<number>;
   taskStartDate: ComputedRef<string>;
   taskEndDate: ComputedRef<string>;
-  getVisibleDayIndex: (date: Date) => number;
-  getDateByVisibleIndex: (index: number) => Date;
+  onValidate?: (startDate: string, endDate: string) => DraftValidationItem[];
 }
 
 export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
@@ -34,6 +38,10 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
   const isDragging = computed(() => mode.value === 'drag');
   const isResizing = computed(() => mode.value === 'resize-left' || mode.value === 'resize-right');
   const isActive = computed(() => mode.value !== 'idle');
+
+  const validationErrors = ref<DraftValidationItem[]>([]);
+  const hasValidationError = computed(() => validationErrors.value.some(v => v.severity === 'error'));
+  const hasValidationWarning = computed(() => validationErrors.value.some(v => v.severity === 'warning'));
 
   const quantizeBySnapStep = (rawDays: number) => {
     const step = Math.max(1, options.snapStepDays.value);
@@ -57,15 +65,12 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     const originEnd = parseLocalDate(originEndDate.value || options.taskEndDate.value);
 
     if (mode.value === 'drag') {
-      const nextIndex = options.getVisibleDayIndex(origin) + dragDeltaDays.value;
-      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
+      return formatLocalDate(addDays(origin, dragDeltaDays.value));
     }
 
     if (mode.value === 'resize-left') {
-      const originIndex = options.getVisibleDayIndex(origin);
-      const endIndex = options.getVisibleDayIndex(originEnd);
-      const nextIndex = Math.min(originIndex + resizeLeftDays.value, endIndex);
-      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
+      const newStart = addDays(origin, resizeLeftDays.value);
+      return formatLocalDate(newStart <= originEnd ? newStart : originEnd);
     }
 
     return formatLocalDate(origin);
@@ -76,22 +81,23 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     const origin = parseLocalDate(originEndDate.value || options.taskEndDate.value);
 
     if (mode.value === 'drag') {
-      const nextIndex = options.getVisibleDayIndex(origin) + dragDeltaDays.value;
-      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
+      return formatLocalDate(addDays(origin, dragDeltaDays.value));
     }
 
     if (mode.value === 'resize-right') {
-      const startIndex = options.getVisibleDayIndex(originStart);
-      const originIndex = options.getVisibleDayIndex(origin);
-      const nextIndex = Math.max(originIndex + resizeRightDays.value, startIndex);
-      return formatLocalDate(options.getDateByVisibleIndex(nextIndex));
+      const newEnd = addDays(origin, resizeRightDays.value);
+      return formatLocalDate(newEnd >= originStart ? newEnd : originStart);
     }
 
     return formatLocalDate(origin);
   });
 
-  const renderLeftPx = computed(() => (isActive.value ? draftLeftPx.value : options.baseLeftPx.value));
-  const renderWidthPx = computed(() => (isActive.value ? draftWidthPx.value : options.baseWidthPx.value));
+  const renderLeftPx = computed(() =>
+    isActive.value ? draftLeftPx.value : options.baseLeftPx.value
+  );
+  const renderWidthPx = computed(() =>
+    isActive.value ? draftWidthPx.value : options.baseWidthPx.value
+  );
 
   const startInteraction = (nextMode: GanttPreviewMode, clientX: number, canvasX: number) => {
     mode.value = nextMode;
@@ -115,11 +121,22 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     startInteraction(side === 'left' ? 'resize-left' : 'resize-right', clientX, canvasX);
   };
 
+  const runValidation = () => {
+    if (!options.onValidate || mode.value === 'idle') {
+      validationErrors.value = [];
+      return;
+    }
+    validationErrors.value = options.onValidate(draftStartDate.value, draftEndDate.value);
+  };
+
   const updateFromCanvas = (clientX: number, canvasX: number) => {
     if (mode.value === 'idle') return;
 
     activeClientX.value = clientX;
-    maxPointerDeltaPx.value = Math.max(maxPointerDeltaPx.value, Math.abs(clientX - pointerStartClientX.value));
+    maxPointerDeltaPx.value = Math.max(
+      maxPointerDeltaPx.value,
+      Math.abs(clientX - pointerStartClientX.value)
+    );
 
     if (mode.value === 'drag') {
       draftLeftPx.value = canvasX - dragAnchorOffsetPx.value;
@@ -148,6 +165,8 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
       Math.abs(clientX - pointerStartClientX.value),
       previewDeltaPx
     );
+
+    runValidation();
   };
 
   const applyTimelineShift = (shiftPx: number) => {
@@ -189,6 +208,9 @@ export function useGanttBarDraft(options: UseGanttBarDraftOptions) {
     draftStartDate,
     draftEndDate,
     activeClientX,
+    validationErrors,
+    hasValidationError,
+    hasValidationWarning,
     startDrag,
     startResize,
     updateFromCanvas,

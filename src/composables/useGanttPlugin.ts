@@ -3,7 +3,11 @@ import type { GanttTask, FlatGanttTask, GanttTaskPreview } from '../types/gantt'
 
 export interface GanttEventPayloads {
   onTaskDragStart: { task: GanttTask | FlatGanttTask; event: PointerEvent };
-  onTaskDrop: { task: GanttTask | FlatGanttTask; newStartDate: string | Date | number; newEndDate: string | Date | number };
+  onTaskDrop: {
+    task: GanttTask | FlatGanttTask;
+    newStartDate: string | Date | number;
+    newEndDate: string | Date | number;
+  };
   onTaskClick: { task: GanttTask | FlatGanttTask; event: MouseEvent };
   onTaskToggle: { task: GanttTask | FlatGanttTask; expanded: boolean };
   onTaskPreviewChange: GanttTaskPreview;
@@ -28,13 +32,15 @@ export class GanttEventBus {
   }
 
   off<K extends GanttEventName>(event: K, handler: GanttEventHandler<K>) {
-    if (!this.listeners[event]) return;
-    this.listeners[event] = this.listeners[event]!.filter(h => h !== handler) as any;
+    const handlers = this.listeners[event];
+    if (!handlers) return;
+    const idx = handlers.indexOf(handler);
+    if (idx !== -1) handlers.splice(idx, 1);
   }
 
   emit<K extends GanttEventName>(event: K, payload: GanttEventPayloads[K]) {
     if (!this.listeners[event]) return;
-    this.listeners[event]!.forEach(handler => handler(payload));
+    this.listeners[event]!.forEach((handler) => handler(payload));
   }
 }
 

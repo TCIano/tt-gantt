@@ -8,7 +8,9 @@ export const LoggerPlugin: GanttPlugin = {
     });
 
     bus.on('onTaskDrop', (payload) => {
-      console.log(`[LoggerPlugin] Task dropped: ${payload.task.name}, new start: ${payload.newStartDate}, new end: ${payload.newEndDate}`);
+      console.log(
+        `[LoggerPlugin] Task dropped: ${payload.task.name}, new start: ${payload.newStartDate}, new end: ${payload.newEndDate}`
+      );
     });
 
     bus.on('onTaskClick', (payload) => {
@@ -16,7 +18,9 @@ export const LoggerPlugin: GanttPlugin = {
     });
 
     bus.on('onTaskToggle', (payload) => {
-      console.log(`[LoggerPlugin] Task toggled: ${payload.task.name}, expanded: ${payload.expanded}`);
+      console.log(
+        `[LoggerPlugin] Task toggled: ${payload.task.name}, expanded: ${payload.expanded}`
+      );
     });
   }
 };

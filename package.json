@@ -1,47 +1,63 @@
 {
-  "name": "tt-gantt",
+  "name": "@my-org/tt-gantt",
   "version": "1.0.0",
   "type": "module",
-  "main": "./dist/tt-gantt.umd.js",
-  "module": "./dist/tt-gantt.es.js",
-  "types": "./dist/index.d.ts",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/tt-gantt.es.js",
-      "require": "./dist/tt-gantt.umd.js"
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
     },
-    "./style.css": "./dist/tt-gantt.css"
+    "./style.css": "./src/style.css",
+    "./dist/tt-gantt.css": "./dist/tt-gantt.css"
   },
   "files": [
     "dist"
   ],
   "publishConfig": {
-    "registry": "http://your-company-registry.com"
+    "registry": "http://your-company-registry.com",
+    "main": "./dist/tt-gantt.umd.js",
+    "module": "./dist/tt-gantt.es.js",
+    "types": "./dist/src/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/src/index.d.ts",
+        "import": "./dist/tt-gantt.es.js",
+        "require": "./dist/tt-gantt.umd.js"
+      },
+      "./style.css": "./dist/tt-gantt.css"
+    }
   },
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint .",
+    "test": "vitest run"
   },
   "peerDependencies": {
     "vue": "^3.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.12.2",
-    "@typescript-eslint/eslint-plugin": "^8.59.0",
-    "@typescript-eslint/parser": "^8.59.0",
-    "@vitejs/plugin-vue": "^6.0.6",
-    "@vue/tsconfig": "^0.9.1",
-    "eslint": "^10.2.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-vue": "^10.9.0",
-    "prettier": "^3.8.3",
-    "typescript": "~6.0.2",
-    "vite": "^8.0.10",
+    "@my-org/eslint-config": "workspace:*",
+    "@my-org/prettier-config": "workspace:*",
+    "@my-org/tsconfig": "workspace:*",
+    "@types/lodash.clonedeep": "^4.5.9",
+    "@types/lodash.merge": "^4.6.9",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vue/tsconfig": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
     "vite-plugin-dts": "^5.0.0",
-    "vue": "^3.5.32",
-    "vue-tsc": "^3.2.7"
+    "vitest": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  },
+  "dependencies": {
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.merge": "^4.6.2",
+    "nanoid": "^5.1.11"
   }
 }

@@ -5,7 +5,7 @@
       <GanttLayout :tasks="tasks" :columns="columns">
         <!-- 自定义左侧表格单元格渲染 -->
         <template #cell-status="{ task }">
-          <span 
+          <span
             class="status-tag"
             :class="{
               'status-done': task.progress === 100,
@@ -13,17 +13,17 @@
               'status-todo': task.progress === 0
             }"
           >
-            {{ task.progress === 100 ? '已完成' : (task.progress > 0 ? '进行中' : '未开始') }}
+            {{ task.progress === 100 ? '已完成' : task.progress > 0 ? '进行中' : '未开始' }}
           </span>
         </template>
 
         <!-- 自定义右侧任务条渲染 -->
         <template #bar="{ task, isDragging }">
-          <div 
+          <div
             class="custom-gantt-bar"
             :class="{ 'is-dragging': isDragging, 'is-done': task.progress === 100 }"
           >
-            <div class="custom-progress" :style="{ width: `${task.progress || 0}%` }"></div>
+            <div class="custom-progress" :style="{ width: `${task.progress || 0}%` }" />
             <span class="custom-label">
               <span v-if="task.progress === 100">✅</span>
               {{ task.name }}
@@ -35,14 +35,19 @@
         <template #tooltip="{ task }">
           <div class="custom-tooltip">
             <div class="custom-tooltip-header">
-              <span class="dot" :style="{ backgroundColor: task.progress === 100 ? '#10b981' : '#3b82f6' }"></span>
+              <span
+                class="dot"
+                :style="{ backgroundColor: task.progress === 100 ? '#10b981' : '#3b82f6' }"
+              />
               {{ task.name }}
             </div>
             <div class="custom-tooltip-body">
               <p><strong>开始：</strong>{{ task.startDate }}</p>
               <p><strong>结束：</strong>{{ task.endDate }}</p>
               <p><strong>进度：</strong>{{ task.progress || 0 }}%</p>
-              <p v-if="task.dependencies?.length"><strong>前置依赖：</strong>{{ task.dependencies.join(', ') }}</p>
+              <p v-if="task.dependencies?.length">
+                <strong>前置依赖：</strong>{{ task.dependencies.join(', ') }}
+              </p>
             </div>
           </div>
         </template>
@@ -62,12 +67,12 @@ const columns = ref<GanttColumn[]>([
   { field: 'status', label: '状态', width: 90, align: 'center' },
   { field: 'startDate', label: '开始时间', width: 110, align: 'center' },
   { field: 'endDate', label: '结束时间', width: 110, align: 'center' },
-  { 
-    field: 'progress', 
+  {
+    field: 'progress',
     label: '进度',
-    width: 80, 
+    width: 80,
     align: 'center',
-    format: (val) => val !== undefined ? `${val}%` : '0%'
+    format: (val) => (val !== undefined ? `${val}%` : '0%')
   }
 ]);
 
@@ -119,7 +124,16 @@ onMounted(() => {
   flex-direction: column;
   box-sizing: border-box;
   background-color: #f3f4f6;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif;
 }
 
 h1 {
@@ -169,7 +183,7 @@ h1 {
   color: white;
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
 }
 .custom-gantt-bar.is-done {
@@ -177,14 +191,14 @@ h1 {
 }
 .custom-gantt-bar.is-dragging {
   transform: scale(1.02);
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 .custom-progress {
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   z-index: 1;
 }
 .custom-label {

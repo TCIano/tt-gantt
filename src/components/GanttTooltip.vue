@@ -5,7 +5,9 @@
         <slot name="tooltip" :task="activeTooltipTask">
           <div class="gantt-tooltip-default">
             <div class="tooltip-header">
-              <div class="tooltip-title">{{ activeTooltipTask.name }}</div>
+              <div class="tooltip-title">
+                {{ activeTooltipTask.name }}
+              </div>
               <div v-if="activeTooltipTask.status" class="status-badge" :style="statusStyle">
                 {{ activeTooltipTask.status }}
               </div>
@@ -20,12 +22,12 @@
                 <span class="label">🏁 结束日期</span>
                 <span class="value">{{ formatDate(activeTooltipTask.endDate) }}</span>
               </div>
-              <div class="tooltip-row duration" v-if="duration">
+              <div v-if="duration" class="tooltip-row duration">
                 <span class="label">🕒 计划工期</span>
                 <span class="value">{{ duration }} 天</span>
               </div>
 
-              <div class="progress-section" v-if="activeTooltipTask.progress !== undefined">
+              <div v-if="activeTooltipTask.progress !== undefined" class="progress-section">
                 <div class="progress-info">
                   <span class="label">当前进度</span>
                   <span class="value">{{ activeTooltipTask.progress }}%</span>
@@ -34,7 +36,7 @@
                   <div
                     class="progress-bar-fill"
                     :style="{ width: `${activeTooltipTask.progress}%` }"
-                  ></div>
+                  />
                 </div>
               </div>
             </div>

@@ -4,45 +4,68 @@
       <div class="toolbar-left">
         <div class="gantt-scale-controls">
           <button
-            class="scale-btn"
             :class="{ active: scale === 'day' }"
-            @click="scale = 'day'"
+            class="scale-btn"
             title="日视图 (D)"
+            @click="scale = 'day'"
           >
             日
           </button>
           <button
-            class="scale-btn"
             :class="{ active: scale === 'week' }"
-            @click="scale = 'week'"
+            class="scale-btn"
             title="周视图 (W)"
+            @click="scale = 'week'"
           >
             周
           </button>
           <button
-            class="scale-btn"
             :class="{ active: scale === 'month' }"
-            @click="scale = 'month'"
+            class="scale-btn"
             title="月视图 (M)"
+            @click="scale = 'month'"
           >
             月
           </button>
         </div>
-        <div class="divider"></div>
+        <div class="divider" />
         <button
           class="tool-btn action-btn"
+          title="保存当前方案"
+          @click="handleSaveScenario"
+        >
+          <span class="icon">💾</span>
+          保存方案
+        </button>
+        <select
+          v-if="store.scenarios.value.length > 0"
+          class="scenario-select"
+          :value="store.activeScenarioId.value"
+          @change="handleSwitchScenario(($event.target as HTMLSelectElement).value)"
+        >
+          <option
+            v-for="s in store.scenarios.value"
+            :key="s.id"
+            :value="s.id"
+          >
+            {{ s.name }}<template v-if="s.isBaseline"> (基准)</template>
+          </option>
+        </select>
+        <div class="divider" />
+        <button
           :class="{ 'is-active': compareView }"
-          @click="toggleCompareView"
+          class="tool-btn action-btn"
           title="分屏对比 (C)"
+          @click="toggleCompareView"
         >
           <span class="icon">🌓</span>
           {{ compareView ? '常规视图' : '对比视图' }}
         </button>
         <button
-          class="tool-btn action-btn"
           :class="{ 'is-active': store.hideHolidays.value }"
-          @click="store.hideHolidays.value = !store.hideHolidays.value"
+          class="tool-btn action-btn"
           title="隐藏节假日 (H)"
+          @click="store.hideHolidays.value = !store.hideHolidays.value"
         >
           <span class="icon">{{ store.hideHolidays.value ? '👁️' : '🙈' }}</span>
           {{ store.hideHolidays.value ? '显示节假日' : '隐藏节假日' }}
@@ -51,19 +74,19 @@
 
       <div class="toolbar-right">
         <div class="history-controls">
-          <button class="icon-btn" @click="store.undo()" title="撤销上次操作 (Ctrl+Z)">↩️</button>
-          <button class="icon-btn" @click="store.redo()" title="重做上次操作 (Ctrl+Y)">↪️</button>
+          <button class="icon-btn" title="撤销上次操作 (Ctrl+Z)" @click="store.undo()">↩️</button>
+          <button class="icon-btn" title="重做上次操作 (Ctrl+Y)" @click="store.redo()">↪️</button>
         </div>
-        <div class="divider"></div>
+        <div class="divider" />
         <div class="dropdown-container">
           <button
+            :class="{ 'is-active': showExportMenu }"
             class="tool-btn"
             @click="toggleExportMenu"
-            :class="{ 'is-active': showExportMenu }"
           >
             <span class="icon">📤</span>
             导出
-            <span class="arrow" :class="{ 'is-open': showExportMenu }">▾</span>
+            <span :class="{ 'is-open': showExportMenu }" class="arrow">▾</span>
           </button>
           <transition name="fade-in">
             <div v-if="showExportMenu" class="dropdown-menu">
@@ -79,8 +102,8 @@
             </div>
           </transition>
         </div>
-        <div class="divider"></div>
-        <button class="icon-btn help-btn" @click="showHelp = !showHelp" title="快捷键帮助">
+        <div class="divider" />
+        <button class="icon-btn help-btn" title="快捷键帮助" @click="showHelp = !showHelp">
           ❓
         </button>
       </div>
@@ -103,7 +126,8 @@
             <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Z</kbd><span>撤销</span></div>
             <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Y</kbd><span>重做</span></div>
             <div class="help-item"><kbd>←</kbd><kbd>→</kbd><span>移动选中任务</span></div>
-            <div class="help-item"><kbd>Shift</kbd>+<kbd>Click</kbd><span>建立依赖连线</span></div>
+            <div class="help-item"><kbd>Shift</kbd>+<kbd>Click</kbd><span>建立/循环依赖类型</span></div>
+            <div class="help-item"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Click</kbd><span>删除依赖</span></div>
             <div class="help-item"><kbd>Esc</kbd><span>取消选择</span></div>
           </div>
         </div>
@@ -111,10 +135,10 @@
     </transition>
 
     <div class="gantt-layout-container">
-      <div class="gantt-layout" :class="{ 'has-compare': compareView }">
-        <div class="gantt-left" ref="leftRef" @scroll="handleLeftScroll">
+      <div :class="{ 'has-compare': compareView }" class="gantt-layout">
+        <div ref="leftRef" class="gantt-left" @scroll="handleLeftScroll">
           <GanttTable :row-class="props.rowClass" :row-style="props.rowStyle">
-            <template v-for="(_, name) in $slots" #[name]="slotProps" :key="name">
+            <template v-for="(_, name) in $slots" :key="name" #[name]="slotProps">
               <slot
                 v-if="
                   name.startsWith('cell-') ||
@@ -122,12 +146,12 @@
                 "
                 :name="name"
                 v-bind="slotProps"
-              ></slot>
+              />
             </template>
           </GanttTable>
         </div>
 
-        <div class="gantt-right" ref="rightRef" @scroll="handleRightScroll">
+        <div ref="rightRef" class="gantt-right" @scroll="handleRightScroll">
           <GanttTimeline
             :bar-class="props.barClass"
             :bar-style="props.barStyle"
@@ -135,17 +159,32 @@
             :row-style="props.rowStyle"
           >
             <template #timeline-header="slotProps">
-              <slot name="timeline-header" v-bind="slotProps"></slot>
+              <slot name="timeline-header" v-bind="slotProps" />
             </template>
             <template #bar="slotProps">
-              <slot name="bar" v-bind="slotProps"></slot>
+              <slot name="bar" v-bind="slotProps" />
             </template>
           </GanttTimeline>
           <transition name="slide-up">
             <div v-if="compareView" class="compare-view">
               <div class="compare-title">
-                <span class="dot"></span>
+                <span class="dot" />
                 对比视图
+                <select
+                  class="scenario-select compare-select"
+                  :value="store.compareScenarioId.value"
+                  @change="store.setCompareScenario(($event.target as HTMLSelectElement).value || null)"
+                >
+                  <option :value="null">-- 选择对比方案 --</option>
+                  <option
+                    v-for="s in store.scenarios.value"
+                    :key="s.id"
+                    :value="s.id"
+                    :disabled="s.id === store.activeScenarioId.value"
+                  >
+                    {{ s.name }}
+                  </option>
+                </select>
               </div>
               <GanttTimeline
                 :bar-class="props.barClass"
@@ -154,10 +193,10 @@
                 :row-style="props.rowStyle"
               >
                 <template #timeline-header="slotProps">
-                  <slot name="timeline-header" v-bind="slotProps"></slot>
+                  <slot name="timeline-header" v-bind="slotProps" />
                 </template>
                 <template #bar="slotProps">
-                  <slot name="bar" v-bind="slotProps"></slot>
+                  <slot name="bar" v-bind="slotProps" />
                 </template>
               </GanttTimeline>
             </div>
@@ -167,31 +206,34 @@
     </div>
     <GanttTooltip>
       <template #tooltip="slotProps">
-        <slot name="tooltip" v-bind="slotProps"></slot>
+        <slot name="tooltip" v-bind="slotProps" />
       </template>
     </GanttTooltip>
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+<script lang="ts" setup>
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import GanttTable from './GanttTable.vue';
 import GanttTimeline from './GanttTimeline.vue';
 import GanttTooltip from './GanttTooltip.vue';
 import { provideGanttStore } from '../composables/useGanttStore';
 import { GanttEventBus, provideGanttEventBus } from '../composables/useGanttPlugin';
+import { useDefaultEventHandlers } from '../composables/useDefaultEventHandlers';
 import { LoggerPlugin } from '../plugins/LoggerPlugin';
 import type {
-  GanttTask,
   FlatGanttTask,
+  GanttBarClassFn,
+  GanttBarStyleFn,
   GanttColumn,
-  GanttSnapMode,
-  GanttStatusStyle,
   GanttRowClassFn,
   GanttRowStyleFn,
-  GanttBarClassFn,
-  GanttBarStyleFn
-} from '../types/gantt';
+  GanttSnapMode,
+  GanttStatusStyle,
+  GanttTask,
+  GanttLayoutMode
+} from '../types/gantt'
+import type { ResourceNode } from '../core/types'
 
 const props = withDefaults(
   defineProps<{
@@ -207,11 +249,13 @@ const props = withDefaults(
     holidays?: string[];
     showBaseline?: boolean;
     showTodayLine?: boolean;
-    hideHolidays?: boolean;
-    rowClass?: GanttRowClassFn;
-    rowStyle?: GanttRowStyleFn;
-    barClass?: GanttBarClassFn;
-    barStyle?: GanttBarStyleFn;
+    hideHolidays?: boolean
+    layoutMode?: GanttLayoutMode
+    resources?: ResourceNode[]
+    rowClass?: GanttRowClassFn
+    rowStyle?: GanttRowStyleFn
+    barClass?: GanttBarClassFn
+    barStyle?: GanttBarStyleFn
   }>(),
   {
     readOnly: false,
@@ -220,7 +264,8 @@ const props = withDefaults(
     weekStartsOn: 1,
     showBaseline: false,
     showTodayLine: true,
-    hideHolidays: false
+    hideHolidays: false,
+    layoutMode: 'task'
   }
 );
 
@@ -309,6 +354,23 @@ watch(
   },
   { immediate: true, deep: true }
 );
+
+// Resource mode sync
+watch(
+  () => props.layoutMode,
+  (mode) => {
+    store.layoutMode.value = mode ?? 'task'
+  },
+  { immediate: true }
+)
+
+watch(
+  () => props.resources,
+  (newResources) => {
+    store.resources.value = newResources ?? []
+  },
+  { immediate: true, deep: true }
+)
 
 const { scrollTop, scrollLeft, viewportHeight, viewportWidth, scale } = store;
 
@@ -449,6 +511,17 @@ const exportPdf = () => {
   window.print();
 };
 
+const handleSaveScenario = () => {
+  const name = `方案 ${store.scenarios.value.length + 1}`
+  store.saveScenario(name)
+}
+
+const handleSwitchScenario = (scenarioId: string) => {
+  store.switchScenario(scenarioId)
+  compareView.value = false
+  store.setCompareScenario(null)
+}
+
 const toggleCompareView = () => {
   compareView.value = !compareView.value;
 };
@@ -467,13 +540,6 @@ onMounted(() => {
     resizeObserver.observe(rightRef.value);
   }
 
-  eventBus.on('onTaskDrop', handleTaskDrop);
-  eventBus.on('onTaskClick', handleTaskClick);
-  eventBus.on('onTaskToggle', handleTaskToggle);
-  eventBus.on('onSelectionChange', handleSelectionChange);
-  eventBus.on('onValidationError', handleValidationError);
-  eventBus.on('onDependencyClick', handleDependencyClick);
-  eventBus.on('onDependencyCreate', handleDependencyCreate);
 });
 
 onUnmounted(() => {
@@ -481,22 +547,40 @@ onUnmounted(() => {
   if (resizeObserver) {
     resizeObserver.disconnect();
   }
-  eventBus.off('onTaskDrop', handleTaskDrop);
-  eventBus.off('onTaskClick', handleTaskClick);
-  eventBus.off('onTaskToggle', handleTaskToggle);
-  eventBus.off('onSelectionChange', handleSelectionChange);
-  eventBus.off('onValidationError', handleValidationError);
-  eventBus.off('onDependencyClick', handleDependencyClick);
-  eventBus.off('onDependencyCreate', handleDependencyCreate);
+});
+
+useDefaultEventHandlers(eventBus, {
+  onTaskDrop: handleTaskDrop,
+  onTaskClick: handleTaskClick,
+  onTaskToggle: handleTaskToggle,
+  onSelectionChange: handleSelectionChange,
+  onValidationError: handleValidationError,
+  onDependencyClick: handleDependencyClick,
+  onDependencyCreate: handleDependencyCreate
 });
 </script>
 
 <style scoped>
 .gantt-layout-wrapper {
   /* 暴露 CSS 变量供外部覆盖 */
+  font-family:
+    inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 16px;
+  outline: none;
+  background-color: var(--gantt-bg-color);
   --gantt-bg-color: #f9fafb;
   --gantt-border-color: #f3f4f6;
   --gantt-header-bg: #f9fafb;
+
   --gantt-header-border: #e5e7eb;
   --gantt-row-hover-bg: #f9fafb;
   --gantt-row-selected-bg: #f5f7ff;
@@ -506,33 +590,18 @@ onUnmounted(() => {
   --gantt-grid-line-color: #f3f4f6;
   --gantt-weekend-bg: #f9fafb;
   --gantt-today-line-color: #ef4444;
-
-  height: 100%;
-  box-sizing: border-box;
-  font-family:
-    inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    sans-serif;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  outline: none;
-  background-color: var(--gantt-bg-color);
-  padding: 16px;
 }
 
 .gantt-toolbar {
-  margin-bottom: 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background: white;
+  justify-content: space-between;
+  margin-bottom: 16px;
   padding: 8px 16px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #f3f4f6;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .toolbar-left,
@@ -545,27 +614,27 @@ onUnmounted(() => {
 .divider {
   width: 1px;
   height: 20px;
-  background: #e5e7eb;
   margin: 0 4px;
+  background: #e5e7eb;
 }
 
 .gantt-scale-controls {
   display: inline-flex;
-  background: #f3f4f6;
-  border-radius: 8px;
   padding: 2px;
+  border-radius: 8px;
+  background: #f3f4f6;
 }
 
 .scale-btn {
-  background: transparent;
-  border: none;
-  padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
-  color: #6b7280;
-  border-radius: 6px;
+  padding: 6px 14px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  color: #6b7280;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
 }
 
 .scale-btn:hover {
@@ -573,31 +642,31 @@ onUnmounted(() => {
 }
 
 .scale-btn.active {
-  background: #ffffff;
   color: #4f46e5;
+  background: #ffffff;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .tool-btn {
-  border: 1px solid #e5e7eb;
-  background: #fff;
-  color: #374151;
-  border-radius: 8px;
-  height: 34px;
-  padding: 0 14px;
   font-size: 13px;
   font-weight: 500;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  cursor: pointer;
   transition: all 0.2s;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  gap: 6px;
 }
 
 .tool-btn:hover {
+  color: #4338ca;
   border-color: #c7d2fe;
   background: #f5f7ff;
-  color: #4338ca;
 }
 
 .tool-btn:active {
@@ -613,31 +682,31 @@ onUnmounted(() => {
 }
 
 .tool-btn.primary {
-  background: #4f46e5;
-  border-color: #4f46e5;
   color: white;
+  border-color: #4f46e5;
+  background: #4f46e5;
 }
 
 .tool-btn.primary:hover {
-  background: #4338ca;
   border-color: #4338ca;
+  background: #4338ca;
 }
 
 .tool-btn.is-active {
-  background: #eef2ff;
-  border-color: #c7d2fe;
   color: #4f46e5;
+  border-color: #c7d2fe;
+  background: #eef2ff;
 }
 
 .icon-btn {
-  background: transparent;
-  border: none;
   font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: background 0.2s;
   line-height: 1;
+  padding: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
 }
 
 .icon-btn:hover {
@@ -656,39 +725,39 @@ onUnmounted(() => {
 
 .dropdown-menu {
   position: absolute;
+  z-index: 100;
   top: calc(100% + 8px);
   right: 0;
-  background: white;
+  min-width: 160px;
+  padding: 6px;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
+  background: white;
   box-shadow:
     0 10px 25px -5px rgba(0, 0, 0, 0.1),
     0 8px 10px -6px rgba(0, 0, 0, 0.1);
-  padding: 6px;
-  min-width: 160px;
-  z-index: 100;
 }
 
 .menu-item {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: none;
-  background: transparent;
-  color: #374151;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 12px;
   cursor: pointer;
   transition: all 0.2s;
   text-align: left;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  gap: 10px;
 }
 
 .menu-item:hover {
-  background: #f3f4f6;
   color: #111827;
+  background: #f3f4f6;
 }
 
 .menu-item.primary {
@@ -701,8 +770,8 @@ onUnmounted(() => {
 
 .arrow {
   font-size: 10px;
-  transition: transform 0.2s;
   display: inline-block;
+  transition: transform 0.2s;
 }
 
 .arrow.is-open {
@@ -712,48 +781,48 @@ onUnmounted(() => {
 /* 帮助弹窗 */
 .help-modal-overlay {
   position: fixed;
+  z-index: 1000;
   top: 0;
-  left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
+  left: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
 }
 
 .help-modal {
-  background: white;
-  border-radius: 16px;
   width: 400px;
   max-width: 90vw;
+  padding: 24px;
+  border-radius: 16px;
+  background: white;
   box-shadow:
     0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  padding: 24px;
 }
 
 .help-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
 }
 
 .help-header h3 {
-  margin: 0;
   font-size: 18px;
+  margin: 0;
   color: #111827;
 }
 
 .close-btn {
-  background: transparent;
-  border: none;
   font-size: 24px;
-  color: #9ca3af;
   cursor: pointer;
+  color: #9ca3af;
+  border: none;
+  background: transparent;
 }
 
 .help-grid {
@@ -763,95 +832,95 @@ onUnmounted(() => {
 }
 
 .help-item {
+  font-size: 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 14px;
   color: #4b5563;
+  gap: 12px;
 }
 
 kbd {
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 2px 6px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 12px;
   font-weight: 600;
+  padding: 2px 6px;
   color: #111827;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  background: #f3f4f6;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
 }
 
 .gantt-layout-container {
+  position: relative;
   flex: 1;
   min-height: 0;
-  position: relative;
 }
 
 .gantt-layout {
   display: flex;
-  height: 100%;
+  overflow: hidden;
   width: 100%;
-  background: #ffffff;
+  height: 100%;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
+  background: #ffffff;
   box-shadow:
     0 4px 6px -1px rgba(0, 0, 0, 0.05),
     0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  overflow: hidden;
 }
 
 .gantt-left {
+  overflow-x: auto;
+  overflow-y: auto;
   flex-shrink: 0;
   width: 320px; /* 默认宽度 */
   max-width: 50%;
-  overflow-y: auto;
-  overflow-x: auto;
-  background: #ffffff;
   border-right: 1px solid #f3f4f6;
+  background: #ffffff;
 }
 
 .gantt-right {
-  flex: 1;
-  overflow: auto;
-  background: #ffffff;
   position: relative;
   display: flex;
+  overflow: auto;
+  flex: 1;
   flex-direction: column;
+  background: #ffffff;
 }
 
 .compare-view {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   border-top: 2px solid #f3f4f6;
   background: #fafafa;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
 }
 
 .compare-title {
-  position: sticky;
-  left: 0;
-  top: 0;
-  z-index: 30;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #9ca3af;
-  padding: 6px 12px;
-  background: rgba(250, 250, 250, 0.9);
-  backdrop-filter: blur(4px);
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  left: 0;
   display: flex;
   align-items: center;
+  padding: 6px 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  background: rgba(250, 250, 250, 0.9);
+  backdrop-filter: blur(4px);
   gap: 6px;
 }
 
 .compare-title .dot {
   width: 6px;
   height: 6px;
-  background: #10b981;
   border-radius: 50%;
+  background: #10b981;
 }
 
 /* 滚动条美化 */
@@ -863,8 +932,8 @@ kbd {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #e5e7eb;
   border-radius: 10px;
+  background: #e5e7eb;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #d1d5db;
@@ -879,5 +948,26 @@ kbd {
 .slide-up-leave-to {
   transform: translateY(20px);
   opacity: 0;
+}
+
+.scenario-select {
+  font-size: 12px;
+  font-weight: 500;
+  height: 30px;
+  padding: 0 8px;
+  cursor: pointer;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.scenario-select:hover {
+  border-color: #c7d2fe;
+}
+
+.compare-select {
+  margin-left: 8px;
+  min-width: 140px;
 }
 </style>

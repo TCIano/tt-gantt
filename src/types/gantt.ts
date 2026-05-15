@@ -7,7 +7,7 @@ export interface GanttColumn {
   minWidth?: number;
   tree?: boolean;
   align?: 'left' | 'center' | 'right';
-  format?: (value: any, task: FlatGanttTask | GanttTask) => string;
+  format?: (value: string | number | Date | boolean, task: FlatGanttTask | GanttTask) => string;
 }
 
 export type GanttScale = 'day' | 'week' | 'month';
@@ -15,6 +15,7 @@ export type GanttScale = 'day' | 'week' | 'month';
 export type GanttPreviewMode = 'drag' | 'resize-left' | 'resize-right';
 export type GanttDependencyType = 'FS' | 'SS' | 'FF' | 'SF';
 export type GanttSnapMode = 'day' | 'week' | 'month';
+export type GanttLayoutMode = 'task' | 'resource';
 
 export interface GanttStatusStyle {
   barColor?: string;
@@ -27,6 +28,7 @@ export interface GanttTask {
   name: string;
   startDate: string | Date | number;
   endDate: string | Date | number;
+  resourceId?: string | number;
   baselineStartDate?: string | Date | number;
   baselineEndDate?: string | Date | number;
   expanded?: boolean;
@@ -37,10 +39,10 @@ export interface GanttTask {
   disabled?: boolean;
   isCritical?: boolean;
   selectable?: boolean;
-  dependencies?: (string | number)[];
-  dependencyTypes?: Partial<Record<string | number, GanttDependencyType>>;
-  children?: GanttTask[];
-  // 允许任何其他自定义属性
+  dependencies?: (string | number)[]
+  dependencyTypes?: Partial<Record<string | number, GanttDependencyType>>
+  dependencyLags?: Partial<Record<string | number, number>>
+  children?: GanttTask[]
   [key: string]: any;
 }
 
@@ -49,6 +51,21 @@ export interface FlatGanttTask extends Omit<GanttTask, 'children'> {
   _hasChildren: boolean;
   _parent?: string | number;
   _visible: boolean;
+  _resourceIndex?: number;
+  _rowType?: 'task' | 'resource';
+  _rowId?: string | number;
+}
+
+export interface FlatResourceRow {
+  id: string;
+  name: string;
+  type: string;
+  _level: number;
+  _hasChildren: boolean;
+  _parent?: string;
+  _visible: boolean;
+  _expanded: boolean;
+  _index: number;
 }
 
 export interface GanttTaskPreview {
@@ -74,3 +91,24 @@ export type GanttRowClassFn = (task: FlatGanttTask) => string | string[] | Recor
 export type GanttRowStyleFn = (task: FlatGanttTask) => CSSProperties;
 export type GanttBarClassFn = (task: FlatGanttTask) => string | string[] | Record<string, boolean>;
 export type GanttBarStyleFn = (task: FlatGanttTask) => CSSProperties;
+
+// Re-export core types for backward compatibility
+export type {
+  ResourceNode,
+  ResourceType,
+  ResourceCapacity,
+  ResourceShift,
+  ResourceCalendar,
+  UnavailablePeriod,
+  MaintenanceWindow,
+  Command,
+  PatchRecord,
+  Constraint,
+  ValidationResult,
+  ValidationItem,
+  Severity,
+  Scenario,
+  EngineState,
+  GanttTaskSnapshot,
+  DependencyType as CoreDependencyType
+} from '../core/types';
